@@ -1,0 +1,108 @@
+module network-policy-base {
+
+  namespace "http://example.com/network-policy-base";
+  prefix npb;
+
+  import ietf-inet-types {
+    prefix inet;
+  }
+  import tailf-common {
+    prefix tailf;
+  }
+  import tailf-ncs {
+    prefix ncs;
+  }
+
+  description
+    "Base model for network topology based services that use policies.  The intent is to re-use the code that
+    is a part of this package without changing it for any given network topology-based service.  Additional 
+    packages should augment this model only where outlined so that the included code can read the model and 
+    apply the policies (NSO templates) at the right place";
+
+  revision 2017-11-08 {
+    description
+      "Initial revision.";
+  }
+
+  grouping network-general-policy-grouping {
+  }
+
+  typedef test-status {
+    type enumeration {
+      enum "UNKNOWN";
+      enum "PASSED";
+      enum "FAILED";
+    }
+  }
+
+  grouping test-service {
+    tailf:action test-service {
+      tailf:info "Test connectivity to the SFO branch";
+      tailf:actionpoint testservice-action;
+      input {
+      }
+      output {
+        leaf test-status {
+          type string;
+        }
+      }
+    }
+
+    leaf service-status {
+      type test-status;
+      default "UNKNOWN";
+    }
+    list test {
+      key "name";
+      leaf name {
+        type string;
+      }
+      leaf status {
+        type test-status;
+        default "UNKNOWN";
+      }
+      leaf device {
+        type string;
+      }
+      leaf command {
+        type string;
+      }
+      leaf-list match-criteria {
+        tailf:info "Values that if found together on a line of output signifies success";
+        type string;
+      }
+      leaf command-output {
+        type string;
+      }
+    }
+  }
+
+  container network {
+    list network-service {
+      description "Network service based on topology and the policies to apply to the topology";
+
+      key name;
+      leaf name {
+        description "Name of this network service instance";
+        tailf:info "Unique network id";
+        tailf:cli-allow-range;
+        type string;
+      }
+
+      uses ncs:service-data;
+      ncs:servicepoint network-policy-base-servicepoint;
+      uses test-service;
+      uses npb:network-general-policy-grouping;
+
+    }
+
+    container policy-definitions {
+      // Augment this container with additional list elements that will define new policiy types
+      // that can be incorporated in the npb:network-general-policy-grouping element or as data 
+      // for actions that are added to the topology-actions
+      container network {
+      }
+    }
+
+  }
+}
